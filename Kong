@@ -1,0 +1,98 @@
+-- [[ SCRIPT KAITUN ĐỘC QUYỀN: NICE HUB ]]
+repeat task.wait() until game:IsLoaded() and game.Players.LocalPlayer
+
+-- Tạo thông báo hiện chữ NICE HUB khi vừa bật script
+game:GetService("StarterGui"):SetCore("SendNotification", {
+    Title = "NICE HUB",
+    Text = "Đang kích hoạt hệ thống Kaitun độc quyền...",
+    Icon = "rbxassetid://0", -- Mày có thể đổi ID ảnh sau này nếu muốn
+    Duration = 7
+})
+
+-- BẢNG CẤU HÌNH NICE HUB
+getgenv().NiceHubConfig = {
+    ["Team"] = "Pirates",
+    ["AutoFarm"] = true,
+    ["BringMob"] = true,
+    ["FastAttack"] = true,
+    ["AutoStats"] = {
+        ["Enabled"] = true,
+        ["Point"] = "Melee"
+    }
+}
+
+local Player = game.Players.LocalPlayer
+local Character = Player.Character or Player.CharacterAdded:Wait()
+
+-- Hệ thống gom quái của Nice Hub
+task.spawn(function()
+    while task.wait() do
+        if getgenv().NiceHubConfig["BringMob"] then
+            pcall(function()
+                local MyPos = Character.HumanoidRootPart.Position
+                for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
+                    if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                        if (v.HumanoidRootPart.Position - MyPos).Magnitude <= 350 then
+                            v.HumanoidRootPart.CFrame = Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -5)
+                            v.HumanoidRootPart.CanCollide = false
+                            v.Humanoid.Active = false
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- Hệ thống đánh nhanh của Nice Hub
+task.spawn(function()
+    while task.wait() do
+        if getgenv().NiceHubConfig["FastAttack"] then
+            pcall(function()
+                local VirtualUser = game:GetService("VirtualUser")
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton1(Vector2.new(850, 520))
+            end)
+        end
+    end
+end)
+
+-- Hệ thống tự cộng điểm
+task.spawn(function()
+    while task.wait(1) do
+        if getgenv().NiceHubConfig["AutoStats"]["Enabled"] then
+            pcall(function()
+                local TargetStat = getgenv().NiceHubConfig["AutoStats"]["Point"]
+                local Points = Player.Data.Points.Value
+                if Points > 0 then
+                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AddPoint", TargetStat, Points)
+                end
+            end)
+        end
+    end
+end)
+
+-- Logic cày quái của Nice Hub
+task.spawn(function()
+    while task.wait(1) do
+        if getgenv().NiceHubConfig["AutoFarm"] then
+            pcall(function()
+                local MyLevel = Player.Data.Level.Value
+                if MyLevel < 15 then
+                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", "BanditQuest1", 1)
+                    for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
+                        if v.Name == "Bandit" and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
+                            repeat task.wait()
+                                local Tool = Player.Backpack:FindFirstChildOfClass("Tool")
+                                if Tool then Character.Humanoid:EquipTool(Tool) end
+                                Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0)
+                            until not v or v.Humanoid.Health <= 0 or not getgenv().NiceHubConfig["AutoFarm"]
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+print("NICE HUB đã chạy thành công!")
