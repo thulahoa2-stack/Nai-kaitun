@@ -1,0 +1,102 @@
+-- [[ SCRIPT KAITUN BASE CỦA RIÊNG MI - BLOX FRUITS ]]
+repeat task.wait() until game:IsLoaded() and game.Players.LocalPlayer
+
+-- 1. BẢNG CẤU HÌNH (CONFIG)
+getgenv().KaitunConfig = {
+    ["Team"] = "Pirates", -- Phe mặc định
+    ["AutoFarm"] = true,
+    ["BringMob"] = true,
+    ["FastAttack"] = true,
+    ["AutoStats"] = {
+        ["Enabled"] = true,
+        ["Point"] = "Melee" -- Tự cộng vào Cận chiến (Sửa thành Sword hoặc Defense nếu muốn)
+    }
+}
+
+-- 2. CÁC BIẾN HỆ THỐNG (VARIABLES)
+local Player = game.Players.LocalPlayer
+local Character = Player.Character or Player.CharacterAdded:Wait()
+
+-- 3. HỆ THỐNG GOM QUÁI (BRING MOB)
+task.spawn(function()
+    while task.wait() do
+        if getgenv().KaitunConfig["BringMob"] then
+            pcall(function()
+                local MyPos = Character.HumanoidRootPart.Position
+                for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
+                    if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                        if (v.HumanoidRootPart.Position - MyPos).Magnitude <= 350 then
+                            v.HumanoidRootPart.CFrame = Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -5)
+                            v.HumanoidRootPart.CanCollide = false
+                            v.Humanoid.Active = false
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- 4. HỆ THỐNG ĐÁNH NHANH (FAST ATTACK)
+task.spawn(function()
+    while task.wait() do
+        if getgenv().KaitunConfig["FastAttack"] then
+            pcall(function()
+                local VirtualUser = game:GetService("VirtualUser")
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton1(Vector2.new(850, 520))
+            end)
+        end
+    end
+end)
+
+-- 5. HỆ THỐNG TỰ ĐỘNG CỘNG ĐIỂM (AUTO STATS)
+task.spawn(function()
+    while task.wait(1) do
+        if getgenv().KaitunConfig["AutoStats"]["Enabled"] then
+            pcall(function()
+                local TargetStat = getgenv().KaitunConfig["AutoStats"]["Point"]
+                local Points = Player.Data.Points.Value
+                if Points > 0 then
+                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AddPoint", TargetStat, Points)
+                end
+            end)
+        end
+    end
+end)
+
+-- 6. HỆ THỐNG LOGIC NHẬN NHIỆM VỤ THEO LEVEL (FARM LOGIC)
+-- (Đây là nơi mày có thể viết thêm các bãi quái hoặc Sea khác nhau sau này)
+task.spawn(function()
+    while task.wait(1) do
+        if getgenv().KaitunConfig["AutoFarm"] then
+            pcall(function()
+                local MyLevel = Player.Data.Level.Value
+                
+                -- Ví dụ logic cho Sea 1 bãi quái đầu tiên (Bandit)
+                if MyLevel < 10 then
+                    -- Nhận nhiệm vụ Bandit
+                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", "BanditQuest1", 1)
+                    
+                    -- Di chuyển tới bãi quái Bandit và tự động trang bị vũ khí để đánh
+                    for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
+                        if v.Name == "Bandit" and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
+                            repeat task.wait()
+                                -- Trang bị vũ khí đầu tiên trong balo
+                                local Tool = Player.Backpack:FindFirstChildOfClass("Tool")
+                                if Tool then Character.Humanoid:EquipTool(Tool) end
+                                
+                                -- Di chuyển nhân vật ra phía sau quái để đấm
+                                Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0)
+                            until not v or v.Humanoid.Health <= 0 or not getgenv().KaitunConfig["AutoFarm"]
+                        end
+                    end
+                else
+                    -- Mày có thể viết tiếp logic nếu Level >= 10, nhận nhiệm vụ khác ở đây...
+                end
+            end)
+        end
+    end
+end)
+
+print("[Kaitun] Script của riêng mày đã được kích hoạt thành công!")
